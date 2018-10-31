@@ -99,6 +99,16 @@ struct logging_allocator {
     }
 };
 
+template <typename T, typename Alloc = std::allocator<T>>
+class container
+{
+    using value_type = T;
+    container(){}
+    ~container(){}
+};
+
+
+
 int main(int, char *[]) {
 /*
     auto v = std::vector<int, logging_allocator<int>>{};
