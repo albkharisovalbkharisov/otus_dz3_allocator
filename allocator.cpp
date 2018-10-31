@@ -102,9 +102,93 @@ struct logging_allocator {
 template <typename T, typename Alloc = std::allocator<T>>
 class container
 {
+private:
+    T* ptr;
+    std::size_t size;
+public:
     using value_type = T;
-    container(){}
+    using reference = T&;
+    using const_reference = const T&;
+    using iterator = MyIt;
+    using const_iterator = MyIt;
+
+    container() : ptr(nullptr), size(0) {}
     ~container(){}
+    void addItem(const T& item)
+    {
+        ptr = Alloc::allocate();
+    }
+
+/////////////////////////////////////////////////
+    struct MyIt : std::iterator<std::forward_iterator_tag, const T>
+    {
+        MyIt(const MyIt & myit) = default;
+        MyIt(const MyItR & myitr) : itL(myitr.itL), itV(myitr.itV) { }
+        MyIt() = default;
+
+        MyIt & operator=(MyIt &&)      = default;
+        MyIt & operator=(MyIt const &) = default;
+
+        bool operator==(const MyIt& rhs) const
+        {
+            return (this->itL == rhs.itL) && (this->itV == rhs.itV);
+        }
+
+        bool operator!=(const MyIt& rhs) const
+        {
+            return !(*this == rhs);
+        }
+
+        MyIt& operator++ ()
+        {
+            ++itV;
+            if (itV == itL->end())
+            {
+                ++itL;
+                itV = itL->begin();
+            }
+            return *this;
+        }
+        MyIt operator++(int) { MyIt temp = *this; ++*this; return temp; }
+
+        const T& operator* () const
+        {
+            return *itV;
+        }
+        const T * operator->() const
+        {
+            return &(*itV);
+        }
+
+        typename VectT::const_iterator itV;
+        typename ListT::const_iterator itL;
+    };
+
+    const MyIt begin() const
+    {
+        MyIt myit;
+        myit.itL = data_.begin();
+        myit.itV = myit.itL->begin();
+        return myit;
+    }
+
+    const MyIt end() const
+    {
+        MyIt myit;
+        myit.itL = data_.end();
+        myit.itV = myit.itL->begin();
+        return myit;
+    }
+
+/////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
 };
 
 
