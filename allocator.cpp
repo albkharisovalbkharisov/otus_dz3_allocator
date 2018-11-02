@@ -33,32 +33,34 @@ struct logging_allocator {
         }
 
         T *p = nullptr;
-        size_t nn = n;
-        for (int i = 0; (i < N); ++i)
+        size_t c = 0;   // n counter
+        size_t i = 0;
+        for ( ; i < N; ++i)
         {
             if (!alloc[i])
             {
                 if (p == nullptr)
                     p = &ptr[i];
-                if (--n <= 0)
-                {
-                    for (; nn > 0; )
-                    {
-                        if (alloc[i + nn - 1])   //dbg_
-                            throw "fignya occured";
-                        alloc[i + --nn] = 1;
-                    }
+                if (++c == n)
                     break;
-                }
             }
             else
             {
                 p = nullptr;
-                n = nn;
+                c = 0;
             }
         }
-        if (!p || (n != 0))
+        if ((p == nullptr) || (c != n))
             throw std::bad_alloc();
+        else
+        {
+            for (c = i + 1 - n; c < (i + 1); ++c)
+            {
+                if (alloc[c])   //dbg_
+                    throw "fignya occured";
+                alloc[c] = 1;
+            }
+        }
         return reinterpret_cast<T *>(p);
     }
 
@@ -100,25 +102,53 @@ struct logging_allocator {
 };
 
 template <typename T, typename Alloc = std::allocator<T>>
-class container
+class containerV
 {
 private:
     T* ptr;
     std::size_t size;
+    std::size_t reserved;
+    Alloc* a;
+    class node
+    {
+        node* next;
+        T* ptr;
+    }
+    node* head;
 public:
     using value_type = T;
     using reference = T&;
     using const_reference = const T&;
-    using iterator = MyIt;
-    using const_iterator = MyIt;
+//    using iterator = MyIt;
+//    using const_iterator = MyIt;
 
-    container() : ptr(nullptr), size(0) {}
-    ~container(){}
-    void addItem(const T& item)
+    containerV() : ptr(nullptr), size(0), a(new Alloc())
     {
-        ptr = Alloc::allocate();
+//        Alloc a(new Alloc());
+    }
+    ~containerV(){}
+
+    template <typename ...Args>
+    void itemAdd(Args &&...args)
+    {
+        if ((size + 1) < reserved)
+        {
+            ptr = a->allocate(1);
+        }
+        a->construct(ptr, std::forward<Args>(args)...);
+        ++size;
+        ++reserved;
     }
 
+    void print(void)
+    {
+        for (size_t i = 0; i < size ; ++i)
+        {
+            std::cout << ptr[i] << " " << std::endl;
+        }
+    }
+
+#if 0
 /////////////////////////////////////////////////
     struct MyIt : std::iterator<std::forward_iterator_tag, const T>
     {
@@ -181,7 +211,7 @@ public:
     }
 
 /////////////////////////////////////////////////////
-
+#endif
 
 
 
@@ -194,10 +224,10 @@ public:
 
 
 int main(int, char *[]) {
-/*
-    auto v = std::vector<int, logging_allocator<int>>{};
-    // v.reserve(5);
-    for (size_t i = 0; i < 1; ++i) {
+#if 0
+    auto v = std::vector<int, logging_allocator<int, 5>>{};
+    v.reserve(5);
+    for (size_t i = 0; i < 5; ++i) {
         v.emplace_back(i);
         std::cout << std::endl;
     }
@@ -205,8 +235,9 @@ int main(int, char *[]) {
     for (auto i: v) {
         std::cout << i << std::endl;
     }
-*/
+#endif
 
+#if 0
     auto m = std::map<int, int, std::less<int>, logging_allocator<std::pair<const int, int>, 10>>{};
     auto fact = [](size_t i) -> size_t
         {
@@ -215,10 +246,16 @@ int main(int, char *[]) {
             return i;
         };
     for (size_t i = 0; i < 10; ++i) {
-        m[i] = fact(i);
+        m[i] = 1;//fact(i);
         std::cout << std::endl;
     }
+#endif
 
+    containerV<int> cv;
+    cv.itemAdd(5);
+    cv.itemAdd(6);
+    cv.itemAdd(7);
+    cv.print();
     return 0;
 }
 
