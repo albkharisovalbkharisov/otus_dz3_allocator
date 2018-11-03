@@ -105,16 +105,23 @@ template <typename T, typename Alloc = std::allocator<T>>
 class containerV
 {
 private:
-    T* ptr;
-    std::size_t size;
-    std::size_t reserved;
-    Alloc* a;
+    using alloc_other = Alloc::other1;       // rebind
     class node
     {
         node* next;
-        T* ptr;
-    }
+        T o;
+        template<typename ...Args>
+        node(Args &&...args) : o(std::forward<Args>(args)...)
+        {
+            std::cout << __PRETTY_FUNCTION__ << std::endl;
+            next = nullptr;
+        }
+    };
     node* head;
+    std::size_t size;
+    Alloc* a;
+    //Alloc<node>::rebind::other* b;
+//    Alloc::rebind<node>::other* b;
 public:
     using value_type = T;
     using reference = T&;
@@ -122,7 +129,7 @@ public:
 //    using iterator = MyIt;
 //    using const_iterator = MyIt;
 
-    containerV() : ptr(nullptr), size(0), a(new Alloc())
+    containerV() : head(nullptr), size(0), a(new Alloc())
     {
 //        Alloc a(new Alloc());
     }
@@ -131,20 +138,22 @@ public:
     template <typename ...Args>
     void itemAdd(Args &&...args)
     {
-        if ((size + 1) < reserved)
-        {
-            ptr = a->allocate(1);
-        }
-        a->construct(ptr, std::forward<Args>(args)...);
+        node* p = head;
+//        if (p != nullptr)
+//        {
+//            while(p->next != nullptr)
+//                p = p->next;
+//        }
+        p = a::other->allocate(1);
+        a->construct(p, std::forward<Args>(args)...);
         ++size;
-        ++reserved;
     }
 
     void print(void)
     {
-        for (size_t i = 0; i < size ; ++i)
+        for (auto p = head; p != nullptr; p = p->next)
         {
-            std::cout << ptr[i] << " " << std::endl;
+            std::cout << p->o << std::endl;
         }
     }
 
@@ -251,11 +260,12 @@ int main(int, char *[]) {
     }
 #endif
 
-    containerV<int> cv;
+    containerV<int, logging_allocator<int, 5>> cv;
     cv.itemAdd(5);
-    cv.itemAdd(6);
-    cv.itemAdd(7);
+//    cv.itemAdd(6);
+//    cv.itemAdd(7);
     cv.print();
+    using my = logging_allocator<int, 5>::rebind<char>::other;
     return 0;
 }
 
