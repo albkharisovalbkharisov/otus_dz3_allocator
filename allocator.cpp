@@ -20,6 +20,11 @@ private:
             std::cout << "delete node: " << o << std::endl;
             next = nullptr;
         }
+        bool operator==(const node & rhs) const
+        {
+            std::cout << "operator==(node)" << std::endl;
+            return this->next == rhs.next;
+        }
     };
     node* head;
     std::size_t size_;
@@ -29,8 +34,6 @@ public:
     using value_type = T;
     using reference = T&;
     using const_reference = const T&;
-//    using iterator = MyIt;
-//    using const_iterator = MyIt;
 
     containerV() : head(nullptr), size_(0), b(new AllocOtherType()){}
     ~containerV()
@@ -73,7 +76,6 @@ public:
         std::cout << "operator" << std::endl;
         node** p = &head;
         for ( ; (pos > 0) && (*p != nullptr); --pos, p = &(*p)->next);
-
         if (*p == nullptr)
             throw "something to throw"; // ne umeyu pravil'no kidat', sorry
         return (*p)->o;
@@ -84,25 +86,35 @@ public:
         std::cout << "print" << std::endl;
         for (auto p = head; p != nullptr; p = p->next)
         {
-//            std::cout << reinterpret_cast<unsigned long long>(p) << " : ";
             std::cout << p->o << std::endl;
         }
     }
 
-#if 0
+#if 1
 /////////////////////////////////////////////////
     struct MyIt : std::iterator<std::forward_iterator_tag, const T>
     {
+//    private:
+        node** p;
         MyIt(const MyIt & myit) = default;
-        MyIt(const MyItR & myitr) : itL(myitr.itL), itV(myitr.itV) { }
         MyIt() = default;
+//        MyIt(node** &&ptr) : p(ptr) {};
+        MyIt(node** const &ptr) : p(ptr) {};
+//        template <typename Z>
+//        MyIt(Z && ptr) : p(ptr) {};
+
+//        template <>
+//        MyIt(Z && ptr) : p(ptr) {};
+//        template <>
+//        MyIt(Z && ptr) : p(ptr) <> {};
 
         MyIt & operator=(MyIt &&)      = default;
         MyIt & operator=(MyIt const &) = default;
+//    public:
 
         bool operator==(const MyIt& rhs) const
         {
-            return (this->itL == rhs.itL) && (this->itV == rhs.itV);
+            return this->p == rhs.p;
         }
 
         bool operator!=(const MyIt& rhs) const
@@ -112,48 +124,39 @@ public:
 
         MyIt& operator++ ()
         {
-            ++itV;
-            if (itV == itL->end())
-            {
-                ++itL;
-                itV = itL->begin();
-            }
+            if (*p != nullptr)
+                *p = (*p)->next;
             return *this;
         }
         MyIt operator++(int) { MyIt temp = *this; ++*this; return temp; }
 
         const T& operator* () const
         {
-            return *itV;
+            return (*p)->o;
         }
         const T * operator->() const
         {
-            return &(*itV);
+            return &(*p)->o;
         }
-
-        typename VectT::const_iterator itV;
-        typename ListT::const_iterator itL;
     };
 
-    const MyIt begin() const
+    MyIt begin()
     {
-        MyIt myit;
-        myit.itL = data_.begin();
-        myit.itV = myit.itL->begin();
-        return myit;
+        return MyIt(&head);
     }
 
-    const MyIt end() const
+    MyIt end()
     {
-        MyIt myit;
-        myit.itL = data_.end();
-        myit.itV = myit.itL->begin();
-        return myit;
+        node** p = &head;
+        for ( ; *p != nullptr; p = &(*p)->next);
+        return MyIt(p);
     }
 
 /////////////////////////////////////////////////////
 #endif
 
+    using iterator = MyIt;
+    using const_iterator = MyIt;
 };
 
 
@@ -271,7 +274,7 @@ public:
 };
 
 int main(int, char *[]) {
-#if 1
+#if 0
     auto v = std::vector<int, logging_allocator<int, 5>>{};
     v.reserve(5);
     for (size_t i = 0; i < 5; ++i) {
@@ -282,9 +285,8 @@ int main(int, char *[]) {
     for (auto i: v) {
         std::cout << i << std::endl;
     }
-#endif
 
-#if 1
+
     auto m = std::map<int, int, std::less<int>, logging_allocator<std::pair<const int, int>, 10>>{};
     auto fact = [](size_t i) -> size_t
         {
@@ -298,7 +300,7 @@ int main(int, char *[]) {
     }
 #endif
 
-#if 1
+#if 0
     containerV<std::string, logging_allocator<std::string, 10>> cv;
 //    containerV<std::string> cv;
     std::cout << "size " << cv.size() << std::endl;
@@ -323,18 +325,17 @@ int main(int, char *[]) {
 //    cv[3] = a;
     cv[3] = "pes barbos";
     std::cout << cv[3] << std::endl;
-#else
-    {
-        containerV<test> ct;
-        ct.itemAdd(1);
-        ct.itemAdd(2);
-        ct.itemAdd(3);
-        ct.itemAdd(4);
-    }
-    std::cout << "===================" << std::endl;
-//    cv.print();
-
 #endif
+
+    containerV<std::string> cv;
+    cv.itemAdd("s0");
+    cv.itemAdd("s1");
+    cv.itemAdd("s2");
+
+    for (auto a = cv.begin(); a != cv.end(); ++a)
+    {
+        std::cout << *a << std::endl;
+    }
     return 0;
 }
 
