@@ -35,15 +35,7 @@ public:
     containerV() : head(nullptr), size_(0), b(new AllocOtherType()){}
     ~containerV()
     {
-        node* &p = head;
-        while( p != nullptr )
-        {
-            std::cout << "node to delete: " << reinterpret_cast<unsigned long>(p) << std::endl;
-            node *tmp = p->next;
-            b->destroy(p);
-            b->deallocate(p, 1);
-            p = tmp;
-        }
+        itemDel(0, size_);
     }
 
     size_t size(void) const
@@ -54,24 +46,37 @@ public:
     template <typename ...Args>
     void itemAdd(Args &&...args)
     {
-        if (head == nullptr)
-        {
-            head = b->allocate(1);
-            b->construct(head, std::forward<Args>(args)...);
-        }
-        else
-        {
-            node *p = head;
-            for ( ; p->next != nullptr; p = p->next);
-            p->next = b->allocate(1);
-            b->construct(p->next, std::forward<Args>(args)...); // don't know how to get rid of code repetition
-        }
+        node** p = &head;
+        for ( ; *p != nullptr; p = &(*p)->next);
+        *p = b->allocate(1);
+        b->construct(*p, std::forward<Args>(args)...);
         ++size_;
     }
 
-    void itemDel(size_t)
+    void itemDel(size_t pos, size_t n = 1)
     {
+        node** p = &head;
+        for ( ; (pos > 0) && (*p != nullptr); --pos, p = &(*p)->next);
+        for ( ; (n > 0) && (*p != nullptr); --n)
+        {
+            std::cout << "del, n=" << n << " : " << reinterpret_cast<size_t>(*p) << std::endl;
+            node *tmp = (*p)->next;
+            b->destroy(*p);
+            b->deallocate(*p, 1);
+            *p = tmp;
+            --size_;
+        }
+    }
 
+    T& operator[](size_t pos)
+    {
+        std::cout << "operator" << std::endl;
+        node** p = &head;
+        for ( ; (pos > 0) && (*p != nullptr); --pos, p = &(*p)->next);
+
+        if (*p == nullptr)
+            throw "something to throw"; // ne umeyu pravil'no kidat', sorry
+        return (*p)->o;
     }
 
     void print(void)
@@ -296,21 +301,26 @@ int main(int, char *[]) {
 #if 1
 //    containerV<std::string, logging_allocator<std::string, 10>> cv;
     containerV<std::string> cv;
-    cv.itemAdd("banka sopel'");
-    cv.itemAdd(" another banka of sopel'");
-    cv.itemAdd(" another banka of sopel' 2");
-    cv.itemAdd("banka sopel' 2");
-    cv.itemAdd("banka sopel' 3");
-    cv.itemAdd("banka sopel' 3");
-    cv.itemAdd("banka sopel' 3");
-    cv.itemAdd("banka sopel' 3");
-    cv.itemAdd("banka sopel' 3");
-    cv.itemAdd("banka sopel' 3");
-    cv.itemAdd("banka sopel' 3");
-    cv.itemAdd("banka sopel' 3");
+    std::cout << "size " << cv.size() << std::endl;
+    cv.itemAdd("s0");
+    cv.itemAdd("s1");
+    cv.itemAdd("s2");
+    cv.itemAdd("s3");
+    std::cout << "size " << cv.size() << std::endl;
+    cv.itemDel(2);
+    std::cout << "size " << cv.size() << std::endl;
 //    containerV<int, logging_allocator<int, 5>> cv;
 //    cv.itemAdd(5);
     cv.print();
+    std::cout << cv[0] << std::endl;
+    std::cout << cv[1] << std::endl;
+    std::cout << cv[2] << std::endl;
+    std::cout << cv[3] << std::endl;
+
+    std::cout << "=====================" << std::endl;
+
+    cv[3] = "pes barbos";
+    std::cout << cv[3] << std::endl;
 #else
     {
         containerV<test> ct;
