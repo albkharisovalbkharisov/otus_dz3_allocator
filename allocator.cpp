@@ -271,7 +271,7 @@ public:
 };
 
 int main(int, char *[]) {
-#if 0
+#if 1
     auto v = std::vector<int, logging_allocator<int, 5>>{};
     v.reserve(5);
     for (size_t i = 0; i < 5; ++i) {
@@ -284,7 +284,7 @@ int main(int, char *[]) {
     }
 #endif
 
-#if 0
+#if 1
     auto m = std::map<int, int, std::less<int>, logging_allocator<std::pair<const int, int>, 10>>{};
     auto fact = [](size_t i) -> size_t
         {
@@ -299,15 +299,15 @@ int main(int, char *[]) {
 #endif
 
 #if 1
-//    containerV<std::string, logging_allocator<std::string, 10>> cv;
-    containerV<std::string> cv;
+    containerV<std::string, logging_allocator<std::string, 10>> cv;
+//    containerV<std::string> cv;
     std::cout << "size " << cv.size() << std::endl;
     cv.itemAdd("s0");
     cv.itemAdd("s1");
     cv.itemAdd("s2");
     cv.itemAdd("s3");
     std::cout << "size " << cv.size() << std::endl;
-    cv.itemDel(2);
+//    cv.itemDel(2);
     std::cout << "size " << cv.size() << std::endl;
 //    containerV<int, logging_allocator<int, 5>> cv;
 //    cv.itemAdd(5);
@@ -319,6 +319,8 @@ int main(int, char *[]) {
 
     std::cout << "=====================" << std::endl;
 
+//    auto a = std::string("pesik");
+//    cv[3] = a;
     cv[3] = "pes barbos";
     std::cout << cv[3] << std::endl;
 #else
