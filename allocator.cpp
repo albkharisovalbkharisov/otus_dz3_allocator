@@ -18,7 +18,6 @@ private:
         ~node()
         {
             std::cout << "delete node: " << o << std::endl;
-            o.~T();
             next = nullptr;
         }
     };
@@ -68,6 +67,11 @@ public:
             b->construct(p->next, std::forward<Args>(args)...); // don't know how to get rid of code repetition
         }
         ++size_;
+    }
+
+    void itemDel(size_t)
+    {
+
     }
 
     void print(void)
@@ -144,12 +148,6 @@ public:
 
 /////////////////////////////////////////////////////
 #endif
-
-
-
-
-
-
 
 };
 
@@ -253,6 +251,20 @@ struct logging_allocator {
 };
 
 
+class test
+{
+public:
+    long a;
+    test(long a) : a(a)
+    {
+        std::cout << __PRETTY_FUNCTION__ << std::endl;
+    }
+    ~test()
+    {
+        std::cout << __PRETTY_FUNCTION__ << std::endl;
+    }
+};
+
 int main(int, char *[]) {
 #if 0
     auto v = std::vector<int, logging_allocator<int, 5>>{};
@@ -281,15 +293,36 @@ int main(int, char *[]) {
     }
 #endif
 
+#if 1
 //    containerV<std::string, logging_allocator<std::string, 10>> cv;
     containerV<std::string> cv;
     cv.itemAdd("banka sopel'");
     cv.itemAdd(" another banka of sopel'");
     cv.itemAdd(" another banka of sopel' 2");
     cv.itemAdd("banka sopel' 2");
+    cv.itemAdd("banka sopel' 3");
+    cv.itemAdd("banka sopel' 3");
+    cv.itemAdd("banka sopel' 3");
+    cv.itemAdd("banka sopel' 3");
+    cv.itemAdd("banka sopel' 3");
+    cv.itemAdd("banka sopel' 3");
+    cv.itemAdd("banka sopel' 3");
+    cv.itemAdd("banka sopel' 3");
 //    containerV<int, logging_allocator<int, 5>> cv;
 //    cv.itemAdd(5);
     cv.print();
+#else
+    {
+        containerV<test> ct;
+        ct.itemAdd(1);
+        ct.itemAdd(2);
+        ct.itemAdd(3);
+        ct.itemAdd(4);
+    }
+    std::cout << "===================" << std::endl;
+//    cv.print();
+
+#endif
     return 0;
 }
 
