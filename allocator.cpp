@@ -114,6 +114,7 @@ public:
 
         bool operator==(const MyIt& rhs) const
         {
+            std::cout << "op==()" << std::endl;
             return this->p == rhs.p;
         }
 
@@ -125,7 +126,7 @@ public:
         MyIt& operator++ ()
         {
             if (*p != nullptr)
-                *p = (*p)->next;
+                p = &(*p)->next;
             return *this;
         }
         MyIt operator++(int) { MyIt temp = *this; ++*this; return temp; }
@@ -142,14 +143,17 @@ public:
 
     MyIt begin()
     {
+        std::cout << "begin()" << std::endl;
         return MyIt(&head);
     }
 
     MyIt end()
     {
+        std::cout << "end()" << std::endl;
         node** p = &head;
         for ( ; *p != nullptr; p = &(*p)->next);
         return MyIt(p);
+//        return MyIt(nullptr);
     }
 
 /////////////////////////////////////////////////////
@@ -163,7 +167,6 @@ public:
 template<typename T, int N>
 struct logging_allocator {
     using value_type = T;
-//
     using pointer = T*;
     using const_pointer = const T*;
     using reference = T&;
@@ -173,7 +176,6 @@ struct logging_allocator {
     struct rebind {
         using other = logging_allocator<U, N>;
     };
-//
 
     T *ptr;
     std::bitset<N> alloc;     // 1 - allocated, 0 - free
@@ -253,7 +255,7 @@ struct logging_allocator {
 
     template<typename U>
     void destroy(U *p) {
-        std::cout << __PRETTY_FUNCTION__ << std::endl;
+//        std::cout << __PRETTY_FUNCTION__ << std::endl;
         p->~U();
     }
 };
@@ -336,6 +338,8 @@ int main(int, char *[]) {
     {
         std::cout << *a << std::endl;
     }
+    for (auto a : cv)
+        std::cout << a << std::endl;
     return 0;
 }
 
