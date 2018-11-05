@@ -4,124 +4,28 @@
 #include <bitset>
 
 
-template<typename T, int N>
-struct logging_allocator {
-    using value_type = T;
-//
-    using pointer = T*;
-    using const_pointer = const T*;
-    using reference = T&;
-    using const_reference = const T&;
-
-    template<typename U>
-    struct rebind {
-        using other = logging_allocator<U, N>;
-    };
-//
-
-    T *ptr;
-    std::bitset<N> alloc;     // 1 - allocated, 0 - free
-    T *allocate(std::size_t n) {
-        std::cout << __PRETTY_FUNCTION__ << "[n = " << n << ", N = " << N << "]" << std::endl;
-        if (ptr == nullptr)
-        {
-            std::cout << "\n\nALLOCATE\n" << std::endl;
-            ptr = (T *) std::malloc(N * sizeof(T));
-            while(n > 0)
-                alloc[--n] = 1;
-            return reinterpret_cast<T *>(ptr);
-        }
-
-        T *p = nullptr;
-        size_t c = 0;   // n counter
-        size_t i = 0;
-        for ( ; i < N; ++i)
-        {
-            if (!alloc[i])
-            {
-                if (p == nullptr)
-                    p = &ptr[i];
-                if (++c == n)
-                    break;
-            }
-            else
-            {
-                p = nullptr;
-                c = 0;
-            }
-        }
-        if ((p == nullptr) || (c != n))
-            throw std::bad_alloc();
-        else
-        {
-            for (c = i + 1 - n; c < (i + 1); ++c)
-            {
-                if (alloc[c])   //dbg_
-                    throw "fignya occured";
-                alloc[c] = 1;
-            }
-        }
-        return reinterpret_cast<T *>(p);
-    }
-
-    void deallocate(T *p, std::size_t n) {
-        (void) n;   // dbg_
-        std::cout << __PRETTY_FUNCTION__ << "\nleft(" << alloc.count() << ")" << std::endl;
-        int i = p - ptr;
-        std::cout << "num = " << i << std::endl;
-        std::cout << "p = " << p << ", ptr = " << ptr  << std::endl;
-
-        for (std::size_t j = i; j < (i + n); ++j)
-        {
-            if (!alloc[j])
-                throw "ERROR_BYAKA";
-            alloc[j] = 0;
-        }
-
-        if (alloc.none())
-        {
-            std::cout << "\n\nDEALLOCATE\n" << std::endl;
-            std::free(ptr);
-            ptr = nullptr;
-        }
-        else
-            std::cout << "\n\nCAN'T DEALLOCATE, " << alloc.count() << " left\n" << std::endl;
-    }
-
-    template<typename U, typename ...Args>
-    void construct(U *p, Args &&...args) {
-        std::cout << __PRETTY_FUNCTION__ << std::endl;
-//        new(p) T(std::forward<Args>(args)...);
-        new(p) U(std::forward<Args>(args)...);
-    }
-
-    void destroy(T *p) {
-        std::cout << __PRETTY_FUNCTION__ << std::endl;
-        p->~T();
-    }
-};
-
 template <typename T, typename Alloc = std::allocator<T>>
 class containerV
 {
 private:
-    using alloc_other = Alloc::other1;       // rebind
     class node
     {
+    public:
         node* next;
         T o;
         template<typename ...Args>
-        node(Args &&...args) : o(std::forward<Args>(args)...)
+        node(Args &&...args) : next(nullptr), o(std::forward<Args>(args)...){}
+        ~node()
         {
-            std::cout << __PRETTY_FUNCTION__ << std::endl;
+            std::cout << "delete node: " << o << std::endl;
+            o.~T();
             next = nullptr;
         }
     };
     node* head;
-    std::size_t size;
-    Alloc* a;
-    //Alloc<node>::rebind::other* b;
-//    Alloc::rebind<node>::other* b;
+    std::size_t size_;
+    using AllocOtherType = typename Alloc::template rebind<node>::other;
+    AllocOtherType *b;
 public:
     using value_type = T;
     using reference = T&;
@@ -129,30 +33,49 @@ public:
 //    using iterator = MyIt;
 //    using const_iterator = MyIt;
 
-    containerV() : head(nullptr), size(0), a(new Alloc())
+    containerV() : head(nullptr), size_(0), b(new AllocOtherType()){}
+    ~containerV()
     {
-//        Alloc a(new Alloc());
+        node* &p = head;
+        while( p != nullptr )
+        {
+            std::cout << "node to delete: " << reinterpret_cast<unsigned long>(p) << std::endl;
+            node *tmp = p->next;
+            b->destroy(p);
+            b->deallocate(p, 1);
+            p = tmp;
+        }
     }
-    ~containerV(){}
+
+    size_t size(void) const
+    {
+        return size_;
+    }
 
     template <typename ...Args>
     void itemAdd(Args &&...args)
     {
-        node* p = head;
-//        if (p != nullptr)
-//        {
-//            while(p->next != nullptr)
-//                p = p->next;
-//        }
-        p = a::other->allocate(1);
-        a->construct(p, std::forward<Args>(args)...);
-        ++size;
+        if (head == nullptr)
+        {
+            head = b->allocate(1);
+            b->construct(head, std::forward<Args>(args)...);
+        }
+        else
+        {
+            node *p = head;
+            for ( ; p->next != nullptr; p = p->next);
+            p->next = b->allocate(1);
+            b->construct(p->next, std::forward<Args>(args)...); // don't know how to get rid of code repetition
+        }
+        ++size_;
     }
 
     void print(void)
     {
+        std::cout << "print" << std::endl;
         for (auto p = head; p != nullptr; p = p->next)
         {
+//            std::cout << reinterpret_cast<unsigned long long>(p) << " : ";
             std::cout << p->o << std::endl;
         }
     }
@@ -231,6 +154,104 @@ public:
 };
 
 
+template<typename T, int N>
+struct logging_allocator {
+    using value_type = T;
+//
+    using pointer = T*;
+    using const_pointer = const T*;
+    using reference = T&;
+    using const_reference = const T&;
+
+    template<typename U>
+    struct rebind {
+        using other = logging_allocator<U, N>;
+    };
+//
+
+    T *ptr;
+    std::bitset<N> alloc;     // 1 - allocated, 0 - free
+    T *allocate(std::size_t n) {
+//        std::cout << __PRETTY_FUNCTION__ << "[n = " << n << ", N = " << N << "]" << std::endl;
+        if (ptr == nullptr)
+        {
+//            std::cout << "\n\nALLOCATE\n" << std::endl;
+            ptr = (T *) std::malloc(N * sizeof(T));
+            while(n > 0)
+                alloc[--n] = 1;
+            return reinterpret_cast<T *>(ptr);
+        }
+
+        T *p = nullptr;
+        size_t c = 0;   // n counter
+        size_t i = 0;
+        for ( ; i < N; ++i)
+        {
+            if (!alloc[i])
+            {
+                if (p == nullptr)
+                    p = &ptr[i];
+                if (++c == n)
+                    break;
+            }
+            else
+            {
+                p = nullptr;
+                c = 0;
+            }
+        }
+        if ((p == nullptr) || (c != n))
+            throw std::bad_alloc();
+        else
+        {
+            for (c = i + 1 - n; c < (i + 1); ++c)
+            {
+                if (alloc[c])   //dbg_
+                    throw "fignya occured";
+                alloc[c] = 1;
+            }
+        }
+        return reinterpret_cast<T *>(p);
+    }
+
+    void deallocate(T *p, std::size_t n) {
+        (void) n;   // dbg_
+//        std::cout << __PRETTY_FUNCTION__ << "\nleft(" << alloc.count() << ")" << std::endl;
+        int i = p - ptr;
+//        std::cout << "num = " << i << std::endl;
+//        std::cout << "p = " << p << ", ptr = " << ptr  << std::endl;
+
+        for (std::size_t j = i; j < (i + n); ++j)
+        {
+            if (!alloc[j])
+                throw "ERROR_BYAKA";
+            alloc[j] = 0;
+        }
+
+        if (alloc.none())
+        {
+//            std::cout << "\n\nDEALLOCATE\n" << std::endl;
+            std::free(ptr);
+            ptr = nullptr;
+        }
+//        else
+//            std::cout << "\n\nCAN'T DEALLOCATE, " << alloc.count() << " left\n" << std::endl;
+    }
+
+    template<typename U, typename ...Args>
+    void construct(U *p, Args &&...args) {
+//        std::cout << __PRETTY_FUNCTION__ << std::endl;
+//        new(p) T(std::forward<Args>(args)...);
+        new(p) U(std::forward<Args>(args)...);
+    }
+
+    template<typename U>
+    void destroy(U *p) {
+        std::cout << __PRETTY_FUNCTION__ << std::endl;
+        p->~U();
+    }
+};
+
 
 int main(int, char *[]) {
 #if 0
@@ -260,12 +281,15 @@ int main(int, char *[]) {
     }
 #endif
 
-    containerV<int, logging_allocator<int, 5>> cv;
-    cv.itemAdd(5);
-//    cv.itemAdd(6);
-//    cv.itemAdd(7);
+//    containerV<std::string, logging_allocator<std::string, 10>> cv;
+    containerV<std::string> cv;
+    cv.itemAdd("banka sopel'");
+    cv.itemAdd(" another banka of sopel'");
+    cv.itemAdd(" another banka of sopel' 2");
+    cv.itemAdd("banka sopel' 2");
+//    containerV<int, logging_allocator<int, 5>> cv;
+//    cv.itemAdd(5);
     cv.print();
-    using my = logging_allocator<int, 5>::rebind<char>::other;
     return 0;
 }
 
