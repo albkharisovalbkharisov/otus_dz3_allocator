@@ -5,7 +5,7 @@
 
 
 template <typename T, typename Alloc = std::allocator<T>>
-class containerV
+class containerL
 {
 private:
     class node
@@ -17,26 +17,24 @@ private:
         node(Args &&...args) : next(nullptr), o(std::forward<Args>(args)...){}
         ~node()
         {
-            std::cout << "delete node: " << o << std::endl;
             next = nullptr;
         }
         bool operator==(const node & rhs) const
         {
-            std::cout << "operator==(node)" << std::endl;
             return this->next == rhs.next;
         }
     };
     node* head;
     std::size_t size_;
     using AllocOtherType = typename Alloc::template rebind<node>::other;
-    AllocOtherType *b;
+    AllocOtherType *a;
 public:
     using value_type = T;
     using reference = T&;
     using const_reference = const T&;
 
-    containerV() : head(nullptr), size_(0), b(new AllocOtherType()){}
-    ~containerV()
+    containerL() : head(nullptr), size_(0), a(new AllocOtherType()){}
+    ~containerL()
     {
         itemDel(0, size_);
     }
@@ -51,8 +49,8 @@ public:
     {
         node** p = &head;
         for ( ; *p != nullptr; p = &(*p)->next);
-        *p = b->allocate(1);
-        b->construct(*p, std::forward<Args>(args)...);
+        *p = a->allocate(1);
+        a->construct(*p, std::forward<Args>(args)...);
         ++size_;
     }
 
@@ -62,10 +60,9 @@ public:
         for ( ; (pos > 0) && (*p != nullptr); --pos, p = &(*p)->next);
         for ( ; (n > 0) && (*p != nullptr); --n)
         {
-            std::cout << "del, n=" << n << " : " << reinterpret_cast<size_t>(*p) << std::endl;
             node *tmp = (*p)->next;
-            b->destroy(*p);
-            b->deallocate(*p, 1);
+            a->destroy(*p);
+            a->deallocate(*p, 1);
             *p = tmp;
             --size_;
         }
@@ -73,7 +70,6 @@ public:
 
     T& operator[](size_t pos)
     {
-        std::cout << "operator" << std::endl;
         node** p = &head;
         for ( ; (pos > 0) && (*p != nullptr); --pos, p = &(*p)->next);
         if (*p == nullptr)
@@ -83,38 +79,24 @@ public:
 
     void print(void)
     {
-        std::cout << "print" << std::endl;
         for (auto p = head; p != nullptr; p = p->next)
         {
             std::cout << p->o << std::endl;
         }
     }
 
-#if 1
-/////////////////////////////////////////////////
     struct MyIt : std::iterator<std::forward_iterator_tag, const T>
     {
-//    private:
         node** p;
         MyIt(const MyIt & myit) = default;
         MyIt() = default;
-//        MyIt(node** &&ptr) : p(ptr) {};
         MyIt(node** const &ptr) : p(ptr) {};
-//        template <typename Z>
-//        MyIt(Z && ptr) : p(ptr) {};
-
-//        template <>
-//        MyIt(Z && ptr) : p(ptr) {};
-//        template <>
-//        MyIt(Z && ptr) : p(ptr) <> {};
 
         MyIt & operator=(MyIt &&)      = default;
         MyIt & operator=(MyIt const &) = default;
-//    public:
 
         bool operator==(const MyIt& rhs) const
         {
-            std::cout << "op==()" << std::endl;
             return this->p == rhs.p;
         }
 
@@ -143,24 +125,17 @@ public:
 
     MyIt begin()
     {
-        std::cout << "begin()" << std::endl;
         return MyIt(&head);
     }
 
     MyIt end()
     {
-        std::cout << "end()" << std::endl;
         node** p = &head;
         for ( ; *p != nullptr; p = &(*p)->next);
         return MyIt(p);
-//        return MyIt(nullptr);
     }
 
-/////////////////////////////////////////////////////
-#endif
-
     using iterator = MyIt;
-    using const_iterator = MyIt;
 };
 
 
@@ -180,10 +155,8 @@ struct logging_allocator {
     T *ptr;
     std::bitset<N> alloc;     // 1 - allocated, 0 - free
     T *allocate(std::size_t n) {
-//        std::cout << __PRETTY_FUNCTION__ << "[n = " << n << ", N = " << N << "]" << std::endl;
         if (ptr == nullptr)
         {
-//            std::cout << "\n\nALLOCATE\n" << std::endl;
             ptr = (T *) std::malloc(N * sizeof(T));
             while(n > 0)
                 alloc[--n] = 1;
@@ -191,7 +164,7 @@ struct logging_allocator {
         }
 
         T *p = nullptr;
-        size_t c = 0;   // n counter
+        size_t c = 0;   // counter
         size_t i = 0;
         for ( ; i < N; ++i)
         {
@@ -214,7 +187,7 @@ struct logging_allocator {
         {
             for (c = i + 1 - n; c < (i + 1); ++c)
             {
-                if (alloc[c])   //dbg_
+                if (alloc[c])
                     throw "fignya occured";
                 alloc[c] = 1;
             }
@@ -223,11 +196,7 @@ struct logging_allocator {
     }
 
     void deallocate(T *p, std::size_t n) {
-        (void) n;   // dbg_
-//        std::cout << __PRETTY_FUNCTION__ << "\nleft(" << alloc.count() << ")" << std::endl;
         int i = p - ptr;
-//        std::cout << "num = " << i << std::endl;
-//        std::cout << "p = " << p << ", ptr = " << ptr  << std::endl;
 
         for (std::size_t j = i; j < (i + n); ++j)
         {
@@ -238,45 +207,68 @@ struct logging_allocator {
 
         if (alloc.none())
         {
-//            std::cout << "\n\nDEALLOCATE\n" << std::endl;
             std::free(ptr);
             ptr = nullptr;
         }
-//        else
-//            std::cout << "\n\nCAN'T DEALLOCATE, " << alloc.count() << " left\n" << std::endl;
     }
 
     template<typename U, typename ...Args>
     void construct(U *p, Args &&...args) {
-//        std::cout << __PRETTY_FUNCTION__ << std::endl;
-//        new(p) T(std::forward<Args>(args)...);
         new(p) U(std::forward<Args>(args)...);
     }
 
     template<typename U>
     void destroy(U *p) {
-//        std::cout << __PRETTY_FUNCTION__ << std::endl;
         p->~U();
     }
 };
 
 
-class test
+int fact(int i)
 {
-public:
-    long a;
-    test(long a) : a(a)
-    {
-        std::cout << __PRETTY_FUNCTION__ << std::endl;
-    }
-    ~test()
-    {
-        std::cout << __PRETTY_FUNCTION__ << std::endl;
-    }
-};
+    return i > 1 ? fact(i-1) : 1;
+}
 
 int main(int, char *[]) {
+    // 1
+    auto m = std::map<int, int>();
+    for (int i = 0; i < 10; ++i){
+        m[i] = fact(i);
+    }
+
+    // 2
+    auto ma = std::map<int, int, logging_allocator<std::pair<int, int>, 10>>();
+    for (int i = 0; i < 10; ++i){
+        ma.insert(std::pair<int, int>(i, fact(i)));
+    }
+    for (auto it = ma.begin(); it != ma.end(); ++it){
+        std::cout << it->first << " " << it->second << std::endl;
+    }
+
+    // 3
+    auto c = containerL<int>();
+    for (int i = 0; i < 10; ++i){
+        c.itemAdd(i);
+    }
+
+    // 4
+    auto ca = containerL<int, logging_allocator<int, 10>>();
+    for (int i = 0; i < 10; ++i){
+        ca.itemAdd(i);
+    }
+    for (auto a : ca){
+        std::cout << a << std::endl;
+    }
+
+}
+
+
+
+
 #if 0
+void test(void)
+{
+#if 1
     auto v = std::vector<int, logging_allocator<int, 5>>{};
     v.reserve(5);
     for (size_t i = 0; i < 5; ++i) {
@@ -302,9 +294,9 @@ int main(int, char *[]) {
     }
 #endif
 
-#if 0
-    containerV<std::string, logging_allocator<std::string, 10>> cv;
-//    containerV<std::string> cv;
+#if 1
+    containerL<std::string, logging_allocator<std::string, 10>> cv;
+//    containerL<std::string> cv;
     std::cout << "size " << cv.size() << std::endl;
     cv.itemAdd("s0");
     cv.itemAdd("s1");
@@ -313,7 +305,7 @@ int main(int, char *[]) {
     std::cout << "size " << cv.size() << std::endl;
 //    cv.itemDel(2);
     std::cout << "size " << cv.size() << std::endl;
-//    containerV<int, logging_allocator<int, 5>> cv;
+//    containerL<int, logging_allocator<int, 5>> cv;
 //    cv.itemAdd(5);
     cv.print();
     std::cout << cv[0] << std::endl;
@@ -329,17 +321,15 @@ int main(int, char *[]) {
     std::cout << cv[3] << std::endl;
 #endif
 
-    containerV<std::string> cv;
-    cv.itemAdd("s0");
-    cv.itemAdd("s1");
-    cv.itemAdd("s2");
+    containerL<std::string> cv1;
+    cv1.itemAdd("s0");
+    cv1.itemAdd("s1");
+    cv1.itemAdd("s2");
 
-    for (auto a = cv.begin(); a != cv.end(); ++a)
-    {
-        std::cout << *a << std::endl;
-    }
-    for (auto a : cv)
+    for (auto a : cv1)
         std::cout << a << std::endl;
     return 0;
+
 }
+#endif // 0
 
