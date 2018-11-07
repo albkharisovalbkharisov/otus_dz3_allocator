@@ -201,7 +201,7 @@ struct logging_allocator {
         for (std::size_t j = i; j < (i + n); ++j)
         {
             if (!alloc[j])
-                throw "ERROR_BYAKA";
+                throw "ERROR";
             alloc[j] = 0;
         }
 
@@ -223,10 +223,9 @@ struct logging_allocator {
     }
 };
 
-
 int fact(int i)
 {
-    return i > 1 ? fact(i-1) : 1;
+    return i > 1 ? i*fact(i-1) : 1;
 }
 
 int main(int, char *[]) {
@@ -237,7 +236,7 @@ int main(int, char *[]) {
     }
 
     // 2
-    auto ma = std::map<int, int, logging_allocator<std::pair<int, int>, 10>>();
+    auto ma = std::map<int, int, std::less<int>, logging_allocator<std::pair<int, int>, 10>>();
     for (int i = 0; i < 10; ++i){
         ma.insert(std::pair<int, int>(i, fact(i)));
     }
@@ -259,77 +258,5 @@ int main(int, char *[]) {
     for (auto a : ca){
         std::cout << a << std::endl;
     }
-
 }
-
-
-
-
-#if 0
-void test(void)
-{
-#if 1
-    auto v = std::vector<int, logging_allocator<int, 5>>{};
-    v.reserve(5);
-    for (size_t i = 0; i < 5; ++i) {
-        v.emplace_back(i);
-        std::cout << std::endl;
-    }
-
-    for (auto i: v) {
-        std::cout << i << std::endl;
-    }
-
-
-    auto m = std::map<int, int, std::less<int>, logging_allocator<std::pair<const int, int>, 10>>{};
-    auto fact = [](size_t i) -> size_t
-        {
-            if (i == 0) return 1;
-            while (i > 2) i *= i - 1;
-            return i;
-        };
-    for (size_t i = 0; i < 10; ++i) {
-        m[i] = 1;//fact(i);
-        std::cout << std::endl;
-    }
-#endif
-
-#if 1
-    containerL<std::string, logging_allocator<std::string, 10>> cv;
-//    containerL<std::string> cv;
-    std::cout << "size " << cv.size() << std::endl;
-    cv.itemAdd("s0");
-    cv.itemAdd("s1");
-    cv.itemAdd("s2");
-    cv.itemAdd("s3");
-    std::cout << "size " << cv.size() << std::endl;
-//    cv.itemDel(2);
-    std::cout << "size " << cv.size() << std::endl;
-//    containerL<int, logging_allocator<int, 5>> cv;
-//    cv.itemAdd(5);
-    cv.print();
-    std::cout << cv[0] << std::endl;
-    std::cout << cv[1] << std::endl;
-    std::cout << cv[2] << std::endl;
-    std::cout << cv[3] << std::endl;
-
-    std::cout << "=====================" << std::endl;
-
-//    auto a = std::string("pesik");
-//    cv[3] = a;
-    cv[3] = "pes barbos";
-    std::cout << cv[3] << std::endl;
-#endif
-
-    containerL<std::string> cv1;
-    cv1.itemAdd("s0");
-    cv1.itemAdd("s1");
-    cv1.itemAdd("s2");
-
-    for (auto a : cv1)
-        std::cout << a << std::endl;
-    return 0;
-
-}
-#endif // 0
 
