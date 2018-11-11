@@ -27,13 +27,22 @@ private:
     node* head;
     std::size_t size_;
     using AllocOtherType = typename Alloc::template rebind<node>::other;
-    AllocOtherType *a;
+    AllocOtherType a;
 public:
     using value_type = T;
     using reference = T&;
     using const_reference = const T&;
 
-    containerL() : head(nullptr), size_(0), a(new AllocOtherType()){}
+    containerL() : head(nullptr), size_(0), a(){}
+//    containerL(const containerL& c) : head(nullptr), size_(0)
+//    {
+//        for (auto a : c)
+//        {
+//            itemAdd(a);
+//        }
+//    }
+
+
     ~containerL()
     {
         itemDel(0, size_);
@@ -49,8 +58,8 @@ public:
     {
         node** p = &head;
         for ( ; *p != nullptr; p = &(*p)->next);
-        *p = a->allocate(1);
-        a->construct(*p, std::forward<Args>(args)...);
+        *p = a.allocate(1);
+        a.construct(*p, std::forward<Args>(args)...);
         ++size_;
     }
 
@@ -61,8 +70,8 @@ public:
         for ( ; (n > 0) && (*p != nullptr); --n)
         {
             node *tmp = (*p)->next;
-            a->destroy(*p);
-            a->deallocate(*p, 1);
+            a.destroy(*p);
+            a.deallocate(*p, 1);
             *p = tmp;
             --size_;
         }
@@ -258,5 +267,11 @@ int main(int, char *[]) {
     for (auto a : ca){
         std::cout << a << std::endl;
     }
+
+//    std::cout << "=================================" << std::endl;
+//    auto c1(c);
+//    for (auto a : c1){
+//        std::cout << a << std::endl;
+//    }
 }
 
