@@ -24,22 +24,32 @@ private:
             return this->next == rhs.next;
         }
     };
+public:
+    using AllocOtherType = typename Alloc::template rebind<node>::other;
     node* head;
     std::size_t size_;
-    using AllocOtherType = typename Alloc::template rebind<node>::other;
     AllocOtherType a;
-public:
+
     using value_type = T;
     using reference = T&;
     using const_reference = const T&;
 
-    containerL() : head(nullptr), size_(0), a()//{}
-    {std::cout << "CTOR" << std::endl;}
-    containerL(const containerL& c) : head(nullptr), size_(0)
+    // move constructor
+    template<typename Y>
+    containerL(containerL<T, Y>&& c)
     {
-        std::cout << "COPY CTOR" << std::endl;
-//        head = nullptr;
-//        size_ = 0;
+        std::cout << "MOVE CTOR" << std::endl;
+        head = reinterpret_cast<node *>(c.head);
+        size_ = c.size_;
+        c.head = nullptr;
+        c.size_ = 0;
+    }
+
+    containerL() : head(nullptr), size_(0), a(){}
+#if 0
+    // copy constructor as it is
+    containerL(const containerL& c) : head(nullptr), size_(0), a()
+    {
         node** p = &head;
         for (size_t i = 0; i < c.size(); ++i, p = &(*p)->next)
         {
@@ -50,16 +60,25 @@ public:
             ++size_;
         }
     }
-    containerL(containerL&& c)
+#else
+    // seems to be a copy constructor, but takes another type as argument
+    template<typename Y>
+    containerL(const containerL<T, Y>& c) : head(nullptr), size_(0), a()
     {
-        std::cout << "MOVE CTOR" << std::endl;
-        head = c.head;
-        c.head = nullptr;
+        std::cout << "COPY CTOR" << std::endl;
+        node** p = &head;
+        for (size_t i = 0; i < c.size(); ++i, p = &(*p)->next)
+        {
+            if (*p != nullptr)
+                throw "smth";
+            *p = a.allocate(1);
+            a.construct(*p, c[i]);
+            ++size_;
+        }
     }
-
+#endif  // 0
     ~containerL()
     {
-        std::cout << "DTOR" << std::endl;
         itemDel(0, size_);
     }
 
@@ -253,6 +272,16 @@ int fact(int i)
 }
 
 int main(int, char *[]) {
+    auto cc = containerL<int>();
+//    cc.itemAdd(1);
+//    cc.itemAdd(1);
+//    cc.itemAdd(1);
+//    cc.itemAdd(1);
+//    cc.itemAdd(1);
+//    std::cout << cc[0] << std::endl;
+    cc.itemDel(0);
+
+#if 0
     // 1
     auto m = std::map<int, int>();
     for (int i = 0; i < 10; ++i){
@@ -275,23 +304,15 @@ int main(int, char *[]) {
     }
 
     // 4
-//    auto ca = containerL<int, logging_allocator<int, 10>>();
-//    for (int i = 0; i < 10; ++i){
-//        ca.itemAdd(std::move(i));
-//    }
-//    for (auto a : ca){
-//        std::cout << a << std::endl;
-//    }
+    std::cout << "========================" << std::endl;
+    containerL<int, logging_allocator<int, 10>> ca(c);
+    std::cout << "========================" << std::endl;
+    for (auto a : ca){
+        std::cout << a << std::endl;
+    }
 
-    std::cout << "=================================" << std::endl;
-    auto c1(c);
-    for (auto a : c1){
-        std::cout << a << std::endl;
-    }
-    auto c2(std::move(c));
-    c.~containerL();
-    for (auto a : c1){
-        std::cout << a << std::endl;
-    }
+    // 5
+    containerL<int> c1(std::move(ca));
+#endif
 }
 
