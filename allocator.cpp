@@ -33,18 +33,33 @@ public:
     using reference = T&;
     using const_reference = const T&;
 
-    containerL() : head(nullptr), size_(0), a(){}
-//    containerL(const containerL& c) : head(nullptr), size_(0)
-//    {
-//        for (auto a : c)
-//        {
-//            itemAdd(a);
-//        }
-//    }
-
+    containerL() : head(nullptr), size_(0), a()//{}
+    {std::cout << "CTOR" << std::endl;}
+    containerL(const containerL& c) : head(nullptr), size_(0)
+    {
+        std::cout << "COPY CTOR" << std::endl;
+//        head = nullptr;
+//        size_ = 0;
+        node** p = &head;
+        for (size_t i = 0; i < c.size(); ++i, p = &(*p)->next)
+        {
+            if (*p != nullptr)
+                throw "smth";
+            *p = a.allocate(1);
+            a.construct(*p, c[i]);
+            ++size_;
+        }
+    }
+    containerL(containerL&& c)
+    {
+        std::cout << "MOVE CTOR" << std::endl;
+        head = c.head;
+        c.head = nullptr;
+    }
 
     ~containerL()
     {
+        std::cout << "DTOR" << std::endl;
         itemDel(0, size_);
     }
 
@@ -77,9 +92,9 @@ public:
         }
     }
 
-    T& operator[](size_t pos)
+    const T& operator[](size_t pos) const
     {
-        node** p = &head;
+        node* const * p = &head;
         for ( ; (pos > 0) && (*p != nullptr); --pos, p = &(*p)->next);
         if (*p == nullptr)
             throw "something to throw"; // ne umeyu pravil'no kidat', sorry
@@ -256,22 +271,27 @@ int main(int, char *[]) {
     // 3
     auto c = containerL<int>();
     for (int i = 0; i < 10; ++i){
-        c.itemAdd(i);
+        c.itemAdd(std::move(i));
     }
 
     // 4
-    auto ca = containerL<int, logging_allocator<int, 10>>();
-    for (int i = 0; i < 10; ++i){
-        ca.itemAdd(i);
-    }
-    for (auto a : ca){
-        std::cout << a << std::endl;
-    }
-
-//    std::cout << "=================================" << std::endl;
-//    auto c1(c);
-//    for (auto a : c1){
+//    auto ca = containerL<int, logging_allocator<int, 10>>();
+//    for (int i = 0; i < 10; ++i){
+//        ca.itemAdd(std::move(i));
+//    }
+//    for (auto a : ca){
 //        std::cout << a << std::endl;
 //    }
+
+    std::cout << "=================================" << std::endl;
+    auto c1(c);
+    for (auto a : c1){
+        std::cout << a << std::endl;
+    }
+    auto c2(std::move(c));
+    c.~containerL();
+    for (auto a : c1){
+        std::cout << a << std::endl;
+    }
 }
 
