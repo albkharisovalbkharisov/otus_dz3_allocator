@@ -36,6 +36,7 @@ public:
 
     containerL() : head(nullptr), size_(0), a() {}
 
+    // not used
     // move constructor, same types
     containerL(containerL && c) : head(nullptr), size_(0), a()
     {
@@ -61,12 +62,37 @@ public:
         }
     }
 
-#if 1
-    // not used yet
+    template <typename X, typename Z>
+    void init(X *thiss, Z &otherr)
+    {
+        std::cout << "init" << std::endl;
+        node** p = &thiss->head;
+        for (size_t i = 0; i < otherr.size(); ++i, p = &(*p)->next)
+        {
+            if (*p != nullptr)
+                throw "smth";
+            *p = thiss->a.allocate(1);
+            thiss->a.construct(*p, otherr[i]);
+            ++(thiss->size_);
+        }
+    }
+
+    // not used
     // copy constructor as it is
     containerL(const containerL &c) : head(nullptr), size_(0), a()
     {
         std::cout << "COPY CTOR" << std::endl;
+        init(this, c);
+    }
+
+    // seems to be a copy constructor, but takes containerL with another allocator type
+    template<typename Y>
+    containerL(const containerL<T, Y>& c) : head(nullptr), size_(0), a()
+    {
+        std::cout << "COPY CTOR<>" << std::endl;
+#if 1
+        init(this, c);
+#else
         node** p = &head;
         for (size_t i = 0; i < c.size(); ++i, p = &(*p)->next)
         {
@@ -76,22 +102,7 @@ public:
             a.construct(*p, c[i]);
             ++size_;
         }
-    }
-#endif  // 0
-    // seems to be a copy constructor, but takes containerL with another allocator type
-    template<typename Y>
-    containerL(const containerL<T, Y>& c) : head(nullptr), size_(0), a()
-    {
-        std::cout << "COPY CTOR<>" << std::endl;
-        node** p = &head;
-        for (size_t i = 0; i < c.size(); ++i, p = &(*p)->next)
-        {
-            if (*p != nullptr)
-                throw "smth";       // dbg_
-            *p = a.allocate(1);
-            a.construct(*p, c[i]);
-            ++size_;
-        }
+#endif
     }
     ~containerL()
     {
