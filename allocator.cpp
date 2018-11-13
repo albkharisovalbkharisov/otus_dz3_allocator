@@ -24,29 +24,30 @@ private:
             return this->next == rhs.next;
         }
     };
-public:
     using AllocOtherType = typename Alloc::template rebind<node>::other;
+public:
     node* head;
     std::size_t size_;
     AllocOtherType a;
-
     using value_type = T;
     using reference = T&;
     using const_reference = const T&;
 
     // move constructor
     template<typename Y>
-    containerL(containerL<T, Y>&& c)
+    containerL(containerL<T, Y>&& c) : a()
     {
-        std::cout << "MOVE CTOR" << std::endl;
-        head = reinterpret_cast<node *>(c.head);
+        std::cout << "11MOVE CTOR" << std::endl;
+        head = reinterpret_cast<node *>(reinterpret_cast<void *>(c.head));
         size_ = c.size_;
         c.head = nullptr;
         c.size_ = 0;
+//        head = reinterpret_cast<node *>(reinterpret_cast<void *>(c.head));
     }
 
     containerL() : head(nullptr), size_(0), a(){}
 #if 0
+    // not used yet
     // copy constructor as it is
     containerL(const containerL& c) : head(nullptr), size_(0), a()
     {
@@ -60,8 +61,8 @@ public:
             ++size_;
         }
     }
-#else
-    // seems to be a copy constructor, but takes another type as argument
+#endif  // 0
+    // seems to be a copy constructor, but takes containerL with another allocator type
     template<typename Y>
     containerL(const containerL<T, Y>& c) : head(nullptr), size_(0), a()
     {
@@ -70,13 +71,12 @@ public:
         for (size_t i = 0; i < c.size(); ++i, p = &(*p)->next)
         {
             if (*p != nullptr)
-                throw "smth";
+                throw "smth";       // dbg_
             *p = a.allocate(1);
             a.construct(*p, c[i]);
             ++size_;
         }
     }
-#endif  // 0
     ~containerL()
     {
         itemDel(0, size_);
@@ -272,35 +272,37 @@ int fact(int i)
 }
 
 int main(int, char *[]) {
-    auto cc = containerL<int>();
-//    cc.itemAdd(1);
-//    cc.itemAdd(1);
-//    cc.itemAdd(1);
-//    cc.itemAdd(1);
-//    cc.itemAdd(1);
-//    std::cout << cc[0] << std::endl;
-    cc.itemDel(0);
+//    auto cc = containerL<int>();
+////    cc.itemAdd(1);
+////    cc.itemAdd(1);
+////    cc.itemAdd(1);
+////    cc.itemAdd(1);
+////    cc.itemAdd(1);
+////    std::cout << cc[0] << std::endl;
+//    cc.itemDel(0);
+//    containerL<int, logging_allocator<int, 10>> c1(std::move(cc));
 
-#if 0
+#if 1
     // 1
-    auto m = std::map<int, int>();
-    for (int i = 0; i < 10; ++i){
-        m[i] = fact(i);
-    }
-
-    // 2
-    auto ma = std::map<int, int, std::less<int>, logging_allocator<std::pair<int, int>, 10>>();
-    for (int i = 0; i < 10; ++i){
-        ma.insert(std::pair<int, int>(i, fact(i)));
-    }
-    for (auto it = ma.begin(); it != ma.end(); ++it){
-        std::cout << it->first << " " << it->second << std::endl;
-    }
+//    auto m = std::map<int, int>();
+//    for (int i = 0; i < 10; ++i){
+//        m[i] = fact(i);
+//    }
+//
+//    // 2
+//    auto ma = std::map<int, int, std::less<int>, logging_allocator<std::pair<int, int>, 10>>();
+//    for (int i = 0; i < 10; ++i){
+//        ma.insert(std::pair<int, int>(i, fact(i)));
+//    }
+//    for (auto it = ma.begin(); it != ma.end(); ++it){
+//        std::cout << it->first << " " << it->second << std::endl;
+//    }
 
     // 3
-    auto c = containerL<int>();
+//    auto c = containerL<int>();
+    containerL<int> c();
     for (int i = 0; i < 10; ++i){
-        c.itemAdd(std::move(i));
+        c.itemAdd(i);
     }
 
     // 4
