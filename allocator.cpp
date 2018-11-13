@@ -50,7 +50,6 @@ public:
     template<typename Y>
     containerL(containerL<T, Y>&& c) : head(nullptr), size_(0), a()
     {
-        std::cout << "MOVE CTOR<>" << std::endl;
         node** p = &head;
         for (size_t i = 0; i < c.size(); ++i, p = &(*p)->next)
         {
@@ -65,7 +64,6 @@ public:
     template <typename X, typename Z>
     void init(X *thiss, Z &otherr)
     {
-        std::cout << "init" << std::endl;
         node** p = &thiss->head;
         for (size_t i = 0; i < otherr.size(); ++i, p = &(*p)->next)
         {
@@ -81,7 +79,6 @@ public:
     // copy constructor as it is
     containerL(const containerL &c) : head(nullptr), size_(0), a()
     {
-        std::cout << "COPY CTOR" << std::endl;
         init(this, c);
     }
 
@@ -89,25 +86,11 @@ public:
     template<typename Y>
     containerL(const containerL<T, Y>& c) : head(nullptr), size_(0), a()
     {
-        std::cout << "COPY CTOR<>" << std::endl;
-#if 1
         init(this, c);
-#else
-        node** p = &head;
-        for (size_t i = 0; i < c.size(); ++i, p = &(*p)->next)
-        {
-            if (*p != nullptr)
-                throw "smth";
-            *p = a.allocate(1);
-            a.construct(*p, c[i]);
-            ++size_;
-        }
-#endif
     }
+
     ~containerL()
     {
-        std::cout << __PRETTY_FUNCTION__ << std::endl;
-        std::cout << "DTOR: " << static_cast<void*>(head) << std::endl;
         itemDel(0, size_);
     }
 
@@ -142,7 +125,6 @@ public:
 
     const T& operator[](size_t pos) const
     {
-        std::cout << "const op []" << std::endl;
         node * const * p = &head;
         for ( ; (pos > 0) && (*p != nullptr); --pos, p = &(*p)->next);
         if (*p == nullptr)
@@ -152,7 +134,6 @@ public:
 
     T& operator[](size_t pos)
     {
-        std::cout << "op []" << std::endl;
         node** p = &head;
         for ( ; (pos > 0) && (*p != nullptr); --pos, p = &(*p)->next);
         if (*p == nullptr)
