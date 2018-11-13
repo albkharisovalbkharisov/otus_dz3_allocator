@@ -34,16 +34,18 @@ public:
     using reference = T&;
     using const_reference = const T&;
 
-    // move constructor
+    containerL() : head(nullptr), size_(0), a() {}
+
+    // move constructor, same types
     containerL(containerL && c) : head(nullptr), size_(0), a()
     {
-        std::cout << "MOVE CTOR" << std::endl;
         head = static_cast<node *>(static_cast<void *>(c.head));
         size_ = c.size_;
         c.head = nullptr;
         c.size_ = 0;
     }
 
+    // move constructor, different allocators
     template<typename Y>
     containerL(containerL<T, Y>&& c) : head(nullptr), size_(0), a()
     {
@@ -57,11 +59,6 @@ public:
             a.construct(*p, std::move(c[i]));
             ++size_;
         }
-    }
-
-    containerL() : head(nullptr), size_(0), a()
-    {
-        std::cout << "CTOR" << std::endl;
     }
 
 #if 1
@@ -303,7 +300,38 @@ int fact(int i)
     return i > 1 ? i*fact(i-1) : 1;
 }
 
-//dbg_
+int main(int, char *[]) {
+    // 1
+    auto m = std::map<int, int>();
+    for (int i = 0; i < 10; ++i){
+        m[i] = fact(i);
+    }
+
+    // 2
+    auto ma = std::map<int, int, std::less<int>, logging_allocator<std::pair<int, int>, 10>>();
+    for (int i = 0; i < 10; ++i){
+        ma.insert(std::pair<int, int>(i, fact(i)));
+    }
+    for (auto it = ma.begin(); it != ma.end(); ++it){
+        std::cout << it->first << " " << it->second << std::endl;
+    }
+
+    // 3
+    containerL<int> c{};
+    for (int i = 0; i < 10; ++i){
+        c.itemAdd(i);
+    }
+
+    // 4
+    containerL<int, logging_allocator<int, 10>> ca{c};
+    for (auto a : ca){
+        std::cout << a << std::endl;
+    }
+
+    // 5
+    containerL<int> c1{std::move(ca)};
+
+#if 0           // for tests
 class myclass
 {
 public:
@@ -331,56 +359,6 @@ public:
     }
 };
 
-
-int main(int, char *[]) {
-////    auto cc = containerL<int>();
-//    containerL<int> cc{};
-//    std::cout << typeid(cc).name() << std::endl;
-////    int i = 5;
-////    cc.itemAdd(i);
-////    cc.itemAdd(i);
-////    cc.itemAdd(1);
-////    cc.itemAdd(1);
-////    cc.itemAdd(1);
-//    std::cout << cc[0] << std::endl;
-////    cc.itemDel(0);
-////    containerL<int, logging_allocator<int, 10>> c1(std::move(cc));
-
-#if 1
-//    // 1
-//    auto m = std::map<int, int>();
-//    for (int i = 0; i < 10; ++i){
-//        m[i] = fact(i);
-//    }
-//
-//    // 2
-//    auto ma = std::map<int, int, std::less<int>, logging_allocator<std::pair<int, int>, 10>>();
-//    for (int i = 0; i < 10; ++i){
-//        ma.insert(std::pair<int, int>(i, fact(i)));
-//    }
-//    for (auto it = ma.begin(); it != ma.end(); ++it){
-//        std::cout << it->first << " " << it->second << std::endl;
-//    }
-
-    // 3
-//    containerL<int> c{};
-//    for (int i = 0; i < 10; ++i){
-//        c.itemAdd(i);
-//    }
-//
-//    // 4
-//    std::cout << "========================" << std::endl;
-//    containerL<int, logging_allocator<int, 10>> ca{c};
-//    std::cout << "========================" << std::endl;
-//    for (auto a : ca){
-//        std::cout << a << std::endl;
-//    }
-//
-//    std::cout << "========================" << std::endl;
-//    // 5
-//    containerL<int> c1{std::move(ca)};
-//    std::cout << "========================" << std::endl;
-#endif
     containerL<myclass, logging_allocator<int, 10>> c3{};
     c3.itemAdd(1);
     c3.itemAdd(myclass(2));
@@ -388,5 +366,6 @@ int main(int, char *[]) {
     for (int i = 0; i < c3.size(); ++i)
         std::cout << c3[i][0] << std::endl;
     containerL<myclass> c2{std::move(c3)};
+#endif // 0
 }
 
