@@ -35,8 +35,10 @@ public:
     using const_reference = const T&;
 
     // move constructor
-    template<typename Y>
-    containerL(containerL<T, Y>&& c) : a()
+#if 0
+//    template<typename Y>
+//    containerL(containerL<T, Y>&& c) : a()
+    containerL(containerL&& c) : a()
     {
         std::cout << "MOVE CTOR" << std::endl;
         head = static_cast<node *>(static_cast<void *>(c.head));
@@ -46,6 +48,24 @@ public:
         c.head = nullptr;
         c.size_ = 0;
     }
+#else
+    template<typename Y>
+    containerL(containerL<T, Y>&& c) : head(nullptr), size_(0), a()
+    {
+        std::cout << "MOVE CTOR" << std::endl;
+        node** p = &head;
+        for (size_t i = 0; i < c.size(); ++i, p = &(*p)->next)
+        {
+            if (*p != nullptr)
+                throw "smth";
+            *p = a.allocate(1);
+            a.construct(*p, std::move(c[i]));
+            ++size_;
+        }
+    }
+
+
+#endif // 0
 
     containerL() : head(nullptr), size_(0), a()
     {
