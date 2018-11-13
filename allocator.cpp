@@ -2,6 +2,7 @@
 #include <vector>
 #include <map>
 #include <bitset>
+#include <typeinfo>
 
 
 template <typename T, typename Alloc = std::allocator<T>>
@@ -37,20 +38,26 @@ public:
     template<typename Y>
     containerL(containerL<T, Y>&& c) : a()
     {
-        std::cout << "11MOVE CTOR" << std::endl;
-        head = reinterpret_cast<node *>(reinterpret_cast<void *>(c.head));
+        std::cout << "MOVE CTOR" << std::endl;
+        head = static_cast<node *>(static_cast<void *>(c.head));
+        std::cout << "  head=" << reinterpret_cast<void*>(head) << std::endl;
+        std::cout << "c.head=" << reinterpret_cast<void*>(c.head) << std::endl;
         size_ = c.size_;
         c.head = nullptr;
         c.size_ = 0;
-//        head = reinterpret_cast<node *>(reinterpret_cast<void *>(c.head));
     }
 
-    containerL() : head(nullptr), size_(0), a(){}
-#if 0
+    containerL() : head(nullptr), size_(0), a()
+    {
+        std::cout << "CTOR" << std::endl;
+    }
+
+#if 1
     // not used yet
     // copy constructor as it is
-    containerL(const containerL& c) : head(nullptr), size_(0), a()
+    containerL(const containerL &c) : head(nullptr), size_(0), a()
     {
+        std::cout << "COPY CTOR" << std::endl;
         node** p = &head;
         for (size_t i = 0; i < c.size(); ++i, p = &(*p)->next)
         {
@@ -66,7 +73,7 @@ public:
     template<typename Y>
     containerL(const containerL<T, Y>& c) : head(nullptr), size_(0), a()
     {
-        std::cout << "COPY CTOR" << std::endl;
+        std::cout << "COPY CTOR<>" << std::endl;
         node** p = &head;
         for (size_t i = 0; i < c.size(); ++i, p = &(*p)->next)
         {
@@ -79,6 +86,8 @@ public:
     }
     ~containerL()
     {
+        std::cout << __PRETTY_FUNCTION__ << std::endl;
+        std::cout << "DTOR: " << static_cast<void*>(head) << std::endl;
         itemDel(0, size_);
     }
 
@@ -113,7 +122,18 @@ public:
 
     const T& operator[](size_t pos) const
     {
-        node* const * p = &head;
+        std::cout << "const op []" << std::endl;
+        node * const * p = &head;
+        for ( ; (pos > 0) && (*p != nullptr); --pos, p = &(*p)->next);
+        if (*p == nullptr)
+            throw "something to throw"; // ne umeyu pravil'no kidat', sorry
+        return (*p)->o;
+    }
+
+    T& operator[](size_t pos)
+    {
+        std::cout << "op []" << std::endl;
+        node** p = &head;
         for ( ; (pos > 0) && (*p != nullptr); --pos, p = &(*p)->next);
         if (*p == nullptr)
             throw "something to throw"; // ne umeyu pravil'no kidat', sorry
@@ -272,18 +292,21 @@ int fact(int i)
 }
 
 int main(int, char *[]) {
-//    auto cc = containerL<int>();
+////    auto cc = containerL<int>();
+//    containerL<int> cc{};
+//    std::cout << typeid(cc).name() << std::endl;
+////    int i = 5;
+////    cc.itemAdd(i);
+////    cc.itemAdd(i);
 ////    cc.itemAdd(1);
 ////    cc.itemAdd(1);
 ////    cc.itemAdd(1);
-////    cc.itemAdd(1);
-////    cc.itemAdd(1);
-////    std::cout << cc[0] << std::endl;
-//    cc.itemDel(0);
-//    containerL<int, logging_allocator<int, 10>> c1(std::move(cc));
+//    std::cout << cc[0] << std::endl;
+////    cc.itemDel(0);
+////    containerL<int, logging_allocator<int, 10>> c1(std::move(cc));
 
 #if 1
-    // 1
+//    // 1
 //    auto m = std::map<int, int>();
 //    for (int i = 0; i < 10; ++i){
 //        m[i] = fact(i);
@@ -299,22 +322,23 @@ int main(int, char *[]) {
 //    }
 
     // 3
-//    auto c = containerL<int>();
-    containerL<int> c();
+    containerL<int> c{};
     for (int i = 0; i < 10; ++i){
         c.itemAdd(i);
     }
 
     // 4
     std::cout << "========================" << std::endl;
-    containerL<int, logging_allocator<int, 10>> ca(c);
+    containerL<int, logging_allocator<int, 10>> ca{c};
     std::cout << "========================" << std::endl;
     for (auto a : ca){
         std::cout << a << std::endl;
     }
 
+    std::cout << "========================" << std::endl;
     // 5
     containerL<int> c1(std::move(ca));
+    std::cout << "========================" << std::endl;
 #endif
 }
 
