@@ -35,24 +35,19 @@ public:
     using const_reference = const T&;
 
     // move constructor
-#if 0
-//    template<typename Y>
-//    containerL(containerL<T, Y>&& c) : a()
-    containerL(containerL&& c) : a()
+    containerL(containerL && c) : head(nullptr), size_(0), a()
     {
         std::cout << "MOVE CTOR" << std::endl;
         head = static_cast<node *>(static_cast<void *>(c.head));
-        std::cout << "  head=" << reinterpret_cast<void*>(head) << std::endl;
-        std::cout << "c.head=" << reinterpret_cast<void*>(c.head) << std::endl;
         size_ = c.size_;
         c.head = nullptr;
         c.size_ = 0;
     }
-#else
+
     template<typename Y>
     containerL(containerL<T, Y>&& c) : head(nullptr), size_(0), a()
     {
-        std::cout << "MOVE CTOR" << std::endl;
+        std::cout << "MOVE CTOR<>" << std::endl;
         node** p = &head;
         for (size_t i = 0; i < c.size(); ++i, p = &(*p)->next)
         {
@@ -63,9 +58,6 @@ public:
             ++size_;
         }
     }
-
-
-#endif // 0
 
     containerL() : head(nullptr), size_(0), a()
     {
@@ -311,6 +303,35 @@ int fact(int i)
     return i > 1 ? i*fact(i-1) : 1;
 }
 
+//dbg_
+class myclass
+{
+public:
+    int a;
+    myclass() : a(15)
+    {
+        std::cout << "CTOR (myclass)" << std::endl;
+    }
+    myclass(int b) : a(b)
+    {
+        std::cout << "CTOR int (myclass)" << std::endl;
+    }
+    myclass(const myclass & m)
+    {
+        std::cout << "COPY CTOR (myclass)" << std::endl;
+    }
+    myclass(myclass && m)
+    {
+        std::cout << "MOVE CTOR (myclass)" << std::endl;
+    }
+    int& operator[](size_t pos)
+    {
+        std::cout << "op[] (myclass)" << std::endl;
+        return a;
+    }
+};
+
+
 int main(int, char *[]) {
 ////    auto cc = containerL<int>();
 //    containerL<int> cc{};
@@ -342,23 +363,30 @@ int main(int, char *[]) {
 //    }
 
     // 3
-    containerL<int> c{};
-    for (int i = 0; i < 10; ++i){
-        c.itemAdd(i);
-    }
-
-    // 4
-    std::cout << "========================" << std::endl;
-    containerL<int, logging_allocator<int, 10>> ca{c};
-    std::cout << "========================" << std::endl;
-    for (auto a : ca){
-        std::cout << a << std::endl;
-    }
-
-    std::cout << "========================" << std::endl;
-    // 5
-    containerL<int> c1(std::move(ca));
-    std::cout << "========================" << std::endl;
+//    containerL<int> c{};
+//    for (int i = 0; i < 10; ++i){
+//        c.itemAdd(i);
+//    }
+//
+//    // 4
+//    std::cout << "========================" << std::endl;
+//    containerL<int, logging_allocator<int, 10>> ca{c};
+//    std::cout << "========================" << std::endl;
+//    for (auto a : ca){
+//        std::cout << a << std::endl;
+//    }
+//
+//    std::cout << "========================" << std::endl;
+//    // 5
+//    containerL<int> c1{std::move(ca)};
+//    std::cout << "========================" << std::endl;
 #endif
+    containerL<myclass, logging_allocator<int, 10>> c3{};
+    c3.itemAdd(1);
+    c3.itemAdd(myclass(2));
+    c3.itemAdd(3);
+    for (int i = 0; i < c3.size(); ++i)
+        std::cout << c3[i][0] << std::endl;
+    containerL<myclass> c2{std::move(c3)};
 }
 
