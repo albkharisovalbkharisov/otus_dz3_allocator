@@ -26,21 +26,17 @@ private:
         }
     };
     using AllocOtherType = typename Alloc::template rebind<node>::other;
-public:
     node* head;
     std::size_t size_;
     AllocOtherType a;
-    using value_type = T;
-    using reference = T&;
-    using const_reference = const T&;
-
+public:
     containerL() : head(nullptr), size_(0), a() {}
 
     // not used
     // move constructor, same types
     containerL(containerL && c) : head(nullptr), size_(0), a()
     {
-        head = static_cast<node *>(static_cast<void *>(c.head));
+        head = c.head;
         size_ = c.size_;
         c.head = nullptr;
         c.size_ = 0;
@@ -334,18 +330,22 @@ public:
     }
     myclass(int b) : a(b)
     {
+        (void) b;
         std::cout << "CTOR int (myclass)" << std::endl;
     }
     myclass(const myclass & m)
     {
+        (void) m;
         std::cout << "COPY CTOR (myclass)" << std::endl;
     }
     myclass(myclass && m)
     {
+        (void) m;
         std::cout << "MOVE CTOR (myclass)" << std::endl;
     }
     int& operator[](size_t pos)
     {
+        (void) pos;
         std::cout << "op[] (myclass)" << std::endl;
         return a;
     }
@@ -355,7 +355,7 @@ public:
     c3.itemAdd(1);
     c3.itemAdd(myclass(2));
     c3.itemAdd(3);
-    for (int i = 0; i < c3.size(); ++i)
+    for (size_t i = 0; i < c3.size(); ++i)
         std::cout << c3[i][0] << std::endl;
     containerL<myclass> c2{std::move(c3)};
 #endif // 0
