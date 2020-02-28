@@ -58,16 +58,16 @@ public:
     }
 
     template <typename X, typename Z>
-    void init(X *thiss, Z &otherr)
+    void init(X *this_, Z &other_)
     {
-        node** p = &thiss->head;
-        for (size_t i = 0; i < otherr.size(); ++i, p = &(*p)->next)
+        node** p = &this_->head;
+        for (size_t i = 0; i < other_.size(); ++i, p = &(*p)->next)
         {
             if (*p != nullptr)
                 throw "smth";
-            *p = thiss->a.allocate(1);
-            thiss->a.construct(*p, otherr[i]);
-            ++(thiss->size_);
+            *p = this_->a.allocate(1);
+            this_->a.construct(*p, other_[i]);
+            ++(this_->size_);
         }
     }
 
@@ -124,7 +124,7 @@ public:
         node * const * p = &head;
         for ( ; (pos > 0) && (*p != nullptr); --pos, p = &(*p)->next);
         if (*p == nullptr)
-            throw "something to throw"; // ne umeyu pravil'no kidat', sorry
+            throw "something to throw";
         return (*p)->o;
     }
 
@@ -133,7 +133,7 @@ public:
         node** p = &head;
         for ( ; (pos > 0) && (*p != nullptr); --pos, p = &(*p)->next);
         if (*p == nullptr)
-            throw "something to throw"; // ne umeyu pravil'no kidat', sorry
+            throw "something to throw";
         return (*p)->o;
     }
 
@@ -248,7 +248,7 @@ struct logging_allocator {
             for (c = i + 1 - n; c < (i + 1); ++c)
             {
                 if (alloc[c])
-                    throw "fignya occured";
+                    throw "error occured";
                 alloc[c] = 1;
             }
         }
@@ -318,46 +318,5 @@ int main(int, char *[]) {
 
     // 5
     containerL<int> c1{std::move(ca)};
-
-#if 0           // for tests
-class myclass
-{
-public:
-    int a;
-    myclass() : a(15)
-    {
-        std::cout << "CTOR (myclass)" << std::endl;
-    }
-    myclass(int b) : a(b)
-    {
-        (void) b;
-        std::cout << "CTOR int (myclass)" << std::endl;
-    }
-    myclass(const myclass & m)
-    {
-        (void) m;
-        std::cout << "COPY CTOR (myclass)" << std::endl;
-    }
-    myclass(myclass && m)
-    {
-        (void) m;
-        std::cout << "MOVE CTOR (myclass)" << std::endl;
-    }
-    int& operator[](size_t pos)
-    {
-        (void) pos;
-        std::cout << "op[] (myclass)" << std::endl;
-        return a;
-    }
-};
-
-    containerL<myclass, logging_allocator<int, 10>> c3{};
-    c3.itemAdd(1);
-    c3.itemAdd(myclass(2));
-    c3.itemAdd(3);
-    for (size_t i = 0; i < c3.size(); ++i)
-        std::cout << c3[i][0] << std::endl;
-    containerL<myclass> c2{std::move(c3)};
-#endif // 0
 }
 
